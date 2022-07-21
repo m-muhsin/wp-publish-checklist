@@ -1,0 +1,14 @@
+# Ignore development dependencies.
+/node_modules/
+/vendor/
+.DS_Store
+
+# Supported local overrides.
+/.env
+/phpcs.xml
+/.wp-env.override.json
+
+# Ignore logs and database dumps.
+*.log
+*.sql
+*.sqlite
