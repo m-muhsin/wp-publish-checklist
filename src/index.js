@@ -1,9 +1,9 @@
 import { registerPlugin } from "@wordpress/plugins";
 import { PluginDocumentSettingPanel } from "@wordpress/edit-post";
 import { __ } from "@wordpress/i18n";
-import { useState, useEffect } from "@wordpress/element";
-import { Icon, CheckboxControl } from "@wordpress/components";
-import { useSelect, useDispatch } from "@wordpress/data";
+import { useState, useEffect, useRef } from "@wordpress/element";
+import { Icon, CheckboxControl, Modal, Button } from "@wordpress/components";
+import { useSelect, useDispatch, select, dispatch } from "@wordpress/data";
 
 import './style.scss';
 
@@ -11,8 +11,14 @@ const ChecklistPlugin = () => {
 
     const [postFields, setPostFields] = useState([]);
     const [ignore, setIgnore] = useState(false);
+
+    const [isOpen, setOpen] = useState(false);
+    const openModal = () => setOpen(true);
+    const closeModal = () => setOpen(false);
+
     const lock = useDispatch('core/editor').lockPostSaving
     const unlock = useDispatch('core/editor').unlockPostSaving
+    const publishButton = useRef(null)
 
     const [title, content, featured_media, excerpt, categories, tags] = useSelect((select) => {
         const getField = select('core/editor').getEditedPostAttribute
@@ -27,7 +33,7 @@ const ChecklistPlugin = () => {
 
     useEffect(() => {
 
-        if ( ! ignore ) {
+        if (!ignore) {
             if (title === '' || content === '' || excerpt === '' || featured_media === 0 || categories.length === 0 || tags.length === 0) {
                 lock();
             } else {
@@ -71,6 +77,43 @@ const ChecklistPlugin = () => {
         ]);
     }, [ignore, title, content, featured_media, excerpt, categories, tags]);
 
+    useEffect(() => {
+
+        let blockLoaded = false;
+        let blockLoadedInterval = setInterval(function () {
+
+            publishButton.current = document.querySelector('.editor-post-publish-button');
+
+            // See if the publish button is loaded.
+            if (publishButton.current) {
+
+                blockLoaded = true;
+
+                publishButton.current.addEventListener('click', () => {
+                    if (select('core/editor').isPostSavingLocked()) {
+                        dispatch("core/edit-post").openGeneralSidebar('edit-post/document');
+                        dispatch("core/edit-post").openGeneralSidebar('edit-post/document');
+                        openModal();
+                    }
+                });
+
+            }
+
+            if (blockLoaded) {
+                clearInterval(blockLoadedInterval);
+            }
+
+        }, 500);
+
+    }, []);
+
+    const publishAnyway = () => {
+        setIgnore(true);
+        unlock();
+        dispatch('core/editor').savePost()
+        closeModal();
+    }
+
     return (
         <>
             <PluginDocumentSettingPanel
@@ -99,6 +142,31 @@ const ChecklistPlugin = () => {
                         setIgnore(value);
                     }}
                 />
+                {isOpen && (
+                    <Modal title="Publish Checklist" onRequestClose={closeModal}>
+                        <p>The following post fields need to be entered before you can publish:</p>
+                        <ul className="checklist-items">
+                            {
+                                postFields.filter(field =>
+                                    field.isPresent === false
+                                ).map((field) => {
+                                    return (
+                                        <li key={field.name} className={field.isPresent ? 'present' : 'missing'}>
+                                            <Icon icon={field.isPresent ? 'yes' : 'no'} />
+                                            <span>{field.label}</span>
+                                        </li>
+                                    )
+                                })
+                            }
+                        </ul>
+                        <Button className="publish-primary" variant="primary" onClick={publishAnyway}>
+                            Publish Anyway
+                        </Button>
+                        <Button variant="secondary" onClick={closeModal}>
+                            Go back
+                        </Button>
+                    </Modal>
+                )}
             </PluginDocumentSettingPanel>
         </>
     )

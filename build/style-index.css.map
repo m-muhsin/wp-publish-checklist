@@ -1,1 +1,0 @@
-{"version":3,"file":"./style-index.css","mappings":";;;AACI;EACI;AAAR;AAGI;EACI;AADR,C","sources":["webpack://wp-publish-checlist/./src/style.scss"],"sourcesContent":[".checklist-items {\n    .dashicons-no {\n        color: red;\n    }\n\n    .dashicons-yes {\n        color: green;\n    }\n}"],"names":[],"sourceRoot":""}
