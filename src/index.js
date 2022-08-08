@@ -21,6 +21,7 @@ const ChecklistPlugin = () => {
     const publishButton = useRef(null)
 
     const [title, content, featured_media, excerpt, categories, tags] = useSelect((select) => {
+
         const getField = select('core/editor').getEditedPostAttribute
         const title = getField('title');
         const content = getField('content');
@@ -28,13 +29,14 @@ const ChecklistPlugin = () => {
         const excerpt = getField('excerpt');
         const categories = getField('categories');
         const tags = getField('tags');
+
         return [title, content, featured_media, excerpt, categories, tags];
     });
 
     useEffect(() => {
 
         if (!ignore) {
-            if (title === '' || content === '' || excerpt === '' || featured_media === 0 || categories.length === 0 || tags.length === 0) {
+            if (title === '' || content === '' || excerpt === '' || featured_media === 0 || categories?.length === 0 || tags?.length === 0) {
                 lock();
             } else {
                 unlock();
@@ -43,7 +45,7 @@ const ChecklistPlugin = () => {
             unlock();
         }
 
-        setPostFields([
+        const postFieldsArray = [
             {
                 name: 'title',
                 label: 'Title',
@@ -64,17 +66,24 @@ const ChecklistPlugin = () => {
                 label: 'Featured Image',
                 isPresent: featured_media !== 0
             },
-            {
+        ];
+
+        if (categories) {
+            postFieldsArray.push({
                 name: 'categories',
                 label: 'Categories',
                 isPresent: categories.length !== 0
-            },
-            {
+            })
+        }
+        if (tags) {
+            postFieldsArray.push({
                 name: 'tags',
                 label: 'Tags',
                 isPresent: tags.length !== 0
-            },
-        ]);
+            });
+        }
+
+        setPostFields(postFieldsArray);
     }, [ignore, title, content, featured_media, excerpt, categories, tags]);
 
     useEffect(() => {
@@ -110,7 +119,10 @@ const ChecklistPlugin = () => {
     const publishAnyway = () => {
         setIgnore(true);
         unlock();
-        dispatch('core/editor').savePost()
+        dispatch('core/editor').editPost({
+            status: 'publish'
+        });
+        dispatch('core/editor').savePost();
         closeModal();
     }
 
